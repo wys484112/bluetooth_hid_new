@@ -99,14 +99,13 @@ public class AutoPairServiceNew extends Service {
                 mInputDeviceServiceListener = new InputDeviceServiceListener();
                 mBluetoothAdapter.getProfileProxy(this, mInputDeviceServiceListener, INPUT_DEVICE);
             } else {
-                KEEP_SCAN = true;
                 cleanBoundDevices();
                 scanLeDevice(true);
             }
             mHandler.removeCallbacks(stopLeScanRunnable);
             mHandler.postDelayed(stopLeScanRunnable, SCAN_PERIOD);
         } else {
-            loding(null, null, "没有蓝牙", false);
+            loading(null, null, "没有蓝牙", false);
         }
 
         return START_STICKY;
@@ -201,7 +200,6 @@ public class AutoPairServiceNew extends Service {
                         mInputDeviceServiceListener = new InputDeviceServiceListener();
                         mBluetoothAdapter.getProfileProxy(context, mInputDeviceServiceListener, INPUT_DEVICE);
                     } else {
-                        KEEP_SCAN = true;
                         cleanBoundDevices();
                         scanLeDevice(true);
                     }
@@ -262,7 +260,7 @@ public class AutoPairServiceNew extends Service {
     }
 
 
-    public void loding(String name, String address, String status, Boolean show) {//点击加载并按钮模仿网络请求
+    public void loading(String name, String address, String status, Boolean show) {//点击加载并按钮模仿网络请求
 
 
         Intent intent1 = new Intent(this, MainDialogActivity.class);
@@ -332,7 +330,7 @@ public class AutoPairServiceNew extends Service {
 
             switch (action) {
                 case BluetoothAdapter.ACTION_DISCOVERY_STARTED: {
-                    loding(null,null,"正在搜索遥控器", true);
+                    loading(null,null,"正在搜索遥控器", true);
                 }
                 break;
                 case "android.bluetooth.input.profile.action.CONNECTION_STATE_CHANGED": {
@@ -342,14 +340,14 @@ public class AutoPairServiceNew extends Service {
                     if (mPairingDevice != null && mPairingDevice.getAddress().equals(device.getAddress())) {
                         if (isHmdDevice(device)) {
                             if (state == BluetoothProfile.STATE_CONNECTING) {//正在连接
-                                loding(device.getName(),device.getAddress(),"正在连接" + device.getName(), true);
+                                loading(device.getName(),device.getAddress(),"正在连接" + device.getName(), true);
                             }
                             if (state == BluetoothProfile.STATE_CONNECTED) {//连接成功
-                                loding(device.getName(),device.getAddress(),"已连接" + device.getName(), false);
+                                loading(device.getName(),device.getAddress(),"已连接" + device.getName(), false);
                                 AutoPairGlobalConfig.setRcMac(mPairingDevice.getAddress());// 设置MAC地址
 
                             } else if (state == BluetoothProfile.STATE_DISCONNECTED) {//连接失败
-                                loding(device.getName(),device.getAddress(),"连接失败", false);
+                                loading(device.getName(),device.getAddress(),"连接失败", false);
 
                             }
                         }
@@ -367,12 +365,11 @@ public class AutoPairServiceNew extends Service {
                             mInputDeviceServiceListener = new InputDeviceServiceListener();
                             mBluetoothAdapter.getProfileProxy(context, mInputDeviceServiceListener, INPUT_DEVICE);
                         } else {
-                            KEEP_SCAN = true;
                             cleanBoundDevices();
                             scanLeDevice(true);
                         }
 
-                        loding(null,null,"正在搜索遥控器", true);
+                        loading(null,null,"正在搜索遥控器", true);
                     }
                 }
                 break;
@@ -384,14 +381,14 @@ public class AutoPairServiceNew extends Service {
                     if (mPairingDevice != null && mPairingDevice.getAddress().equals(device.getAddress())) {
                         if (isHmdDevice(device)) {
                             if (state == BluetoothDevice.BOND_BONDING) {
-                                loding(device.getName(),device.getAddress(),"配对中", true);
+                                loading(device.getName(),device.getAddress(),"配对中", true);
                             }
                             if (state == BluetoothDevice.BOND_BONDED) {
-                                loding(device.getName(),device.getAddress(),"已配对", false);
+                                loading(device.getName(),device.getAddress(),"已配对", false);
 
                             }
                             if (state == BluetoothDevice.BOND_BONDED && previousState == BluetoothDevice.BOND_BONDING) {
-                                loding(device.getName(),device.getAddress(),"正在连接", true);
+                                loading(device.getName(),device.getAddress(),"正在连接", true);
                                 connect(device);//连接设备
                             }
                         }
@@ -490,7 +487,7 @@ public class AutoPairServiceNew extends Service {
             if ((0 - rssi) <= BLE_RSSI) {
                 return true;
             } else if (System.currentTimeMillis() - matchTime > 10 * 1000) {
-                loding(device.getName(),device.getAddress(),"信号弱",false);
+                loading(device.getName(),device.getAddress(),"信号弱",false);
                 matchTime = System.currentTimeMillis();
             }
         }
