@@ -39,6 +39,12 @@
     <string name="enter">进入操作</string>
 
 
+    <string name="phicom_name">遥控器名称</string>
+    <string name="phicom_address">遥控器地址</string>
+
+    <string name="phicom_status">连接状态</string>
+
+
     <string name="auto_pairng">正在配对</string>
     <string name="auto_pair_timeout">配对超时</string>
     <string name="auto_pair_sucess">配对成功</string>
