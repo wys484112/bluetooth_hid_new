@@ -6,7 +6,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.viroyal.bluetooth"
-        minSdkVersion 25
+        minSdkVersion 23
         targetSdkVersion 25
         versionCode 232
         versionName "2.3.2"
@@ -20,9 +20,9 @@ android {
 }
 
 dependencies {
-//    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
     testImplementation 'junit:junit:4.12'
     implementation 'com.android.support:appcompat-v7:23.1.1'
-    compileOnly files('libs/android-25.jar')
+//    compileOnly files('libs/android-25.jar')
 
 }
