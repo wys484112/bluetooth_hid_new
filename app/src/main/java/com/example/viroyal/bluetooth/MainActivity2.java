@@ -50,18 +50,6 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
     public static final int INPUT_DEVICE = 4;
     private BluetoothProfile mBluetoothProfile;
 
-    //    private static final int REQUEST_CODE_OPEN_GPS = 1;
-//    private static final int REQUEST_CODE_PERMISSION_LOCATION = 2;
-//
-//    private LinearLayout layout_setting;
-//    private Button btn_scan;
-//    private EditText et_name, et_mac, et_uuid;
-//    private Switch sw_auto;
-//    private ImageView img_loading;
-//
-//    private Animation operatingAnim;
-//    private DeviceAdapter mDeviceAdapter;
-//    private ProgressDialog progressDialog;
     private ArrayList<BluetoothDevice> devices = new ArrayList<BluetoothDevice>();
 
     private BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
@@ -119,6 +107,7 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
     }
 
     private void openBluetooth() {
+
         devices.clear();
         if (adapter == null) {
             Toast.makeText(this, "不支持蓝牙功能", Toast.LENGTH_SHORT).show();
@@ -126,23 +115,15 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
             return;
         }
 
-        if (adapter != null) {
-            if (adapter != null) {
-                adapter.getProfileProxy(context, mListener,
-                        INPUT_DEVICE);
-            }
+        if(mBluetoothProfile!=null){
+            workThreadInit();
+            readPhicomPERIPHERALDevices();
+        }else{
+            adapter.getProfileProxy(context, mListener,
+                    INPUT_DEVICE);
         }
-        workThreadInit();
-        readPhicomPERIPHERALDevices();
-//        Log.d("wwww", "adapter.getDiscoverableTimeout()==" + adapter.);
         TimerHandler.postDelayed(myTimerRun, delayMillis);        //使用postDelayed方法，两秒后再调用此myTimerRun对象
 
-        //开启显示，让本机可以被搜索到
-//            if (adapter.getScanMode() != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
-//                Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-//                discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
-//                startActivity(discoverableIntent);
-//            }
 
 
     }
@@ -195,16 +176,8 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             switch (action) {
-//                case BluetoothAdapter.ACTION_DISCOVERY_FINISHED: {
-//                    if (adapter.getProfileConnectionState(INPUT_DEVICE) == BluetoothProfile.STATE_CONNECTED) {
-//                    } else {
-//                        Toast.makeText(MainActivity2.this, "startDiscovery", Toast.LENGTH_LONG).show();
-//                        adapter.startDiscovery();
-//                    }
-//                }
-//                break;
+
                 case BluetoothAdapter.ACTION_DISCOVERY_STARTED: {
-//                    Toast.makeText(MainActivity2.this, "正在搜索遥控器", Toast.LENGTH_LONG).show();
                     updatePhicomPERIPHERALDeviceStatus("正在搜索遥控器");
 
                 }
@@ -375,7 +348,7 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
             for (BluetoothDevice device : bondedDevices) {
                 if (isPhicomPERIPHERAL(device)) {
                     try {
-                        if(cancelBondProcess(BluetoothDevice.class, device)){
+                        if(isConnected(BluetoothDevice.class, device)){
                             txt_name.setText(device.getName());
                             txt_address.setText(device.getAddress());
                             updatePhicomPERIPHERALDeviceStatus("已连接"+device.getName());
@@ -399,7 +372,6 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
         if (device != null && device.getBluetoothClass().getMajorDeviceClass() == BluetoothClass.Device.Major.PERIPHERAL) {
             if (device.getName() != null && !device.getName().isEmpty()) {
                 if (device.getName().equals("斐讯遥控器")) {
-//                    device.getAddress();
                     return true;
                 }
             }

@@ -38,4 +38,13 @@
     <string name="disconnect">断开连接</string>
     <string name="enter">进入操作</string>
 
+
+    <string name="auto_pairng">正在配对</string>
+    <string name="auto_pair_timeout">配对超时</string>
+    <string name="auto_pair_sucess">配对成功</string>
+    <string name="auto_pair_fail">配对失败</string>
+    <string name="auto_pair_rssi_low">配对信号弱</string>
+    <string name="title_activity_main2">Main2Activity</string>
+
+
 </resources>
