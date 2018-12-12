@@ -12,6 +12,7 @@ import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -52,18 +53,20 @@ public class AutoPairServiceNew extends Service {
     public static final int INPUT_DEVICE = 4;
     public static final int PRIORITY_AUTO_CONNECT = 1000;
     //开启扫描时间，一直开启BT会影响WIFI速率，也没必要一直开启，在15分后关闭扫描
-    private static final long SCAN_PERIOD = 1000 * 60;
+    private static final long SCAN_PERIOD = 1000 * 20;
     public boolean mScanning = false;
-    private PairHandler mHandler;
+    private Handler mHandler;
     public static boolean RUNNING = false;
     public static boolean KEEP_SCAN = false;
-    private  Context context;
+    private Context context;
+
     @Override
     public void onCreate() {
         super.onCreate();
-        context=this;
+        context = this;
         Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> onCreate");
     }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
@@ -71,6 +74,7 @@ public class AutoPairServiceNew extends Service {
         mScanning = false;
         boolean init = initBluetooth();
         initUI();
+
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED); //监听搜索完毕
@@ -85,25 +89,29 @@ public class AutoPairServiceNew extends Service {
         filter.addAction(BluetoothDevice.ACTION_PAIRING_REQUEST);     //监听配对的状态
         registerReceiver(mBluetoothReceiver, filter);
 
-
-        Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> onStartCommand");
-        //第一次启动mBluetoothProfile可能还没回调初始化，在2.step会去扫描
-        //第二次启动mBluetoothProfile已经初始化完毕，代表需要直接扫描，那么此时直接开启扫描
-        mPairingDevice = null;
-        if(mBluetoothProfile ==null){
-            //TODO 1.step 获取输出设备的操作对象BluetoothProfile
-            mInputDeviceServiceListener = new InputDeviceServiceListener();
-            mBluetoothAdapter.getProfileProxy(this, mInputDeviceServiceListener, INPUT_DEVICE);
+        if (init) {
+            Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> onStartCommand");
+            //第一次启动mBluetoothProfile可能还没回调初始化，在2.step会去扫描
+            //第二次启动mBluetoothProfile已经初始化完毕，代表需要直接扫描，那么此时直接开启扫描
+            mPairingDevice = null;
+            if (mBluetoothProfile == null) {
+                //TODO 1.step 获取输出设备的操作对象BluetoothProfile
+                mInputDeviceServiceListener = new InputDeviceServiceListener();
+                mBluetoothAdapter.getProfileProxy(this, mInputDeviceServiceListener, INPUT_DEVICE);
+            } else {
+                KEEP_SCAN = true;
+                cleanBoundDevices();
+                scanLeDevice(true);
+            }
+            mHandler.removeCallbacks(stopLeScanRunnable);
+            mHandler.postDelayed(stopLeScanRunnable, SCAN_PERIOD);
         } else {
-            KEEP_SCAN = true;
-            cleanBoundDevices();
-            scanLeDevice(true);
+            loding(null, null, "没有蓝牙", false);
         }
-        mHandler.removeCallbacks(stopLeScanRunnable);
-        mHandler.postDelayed(stopLeScanRunnable, SCAN_PERIOD);
 
         return START_STICKY;
     }
+
     @Override
     public void onDestroy() {
         Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> onDestroy");
@@ -113,6 +121,7 @@ public class AutoPairServiceNew extends Service {
         RUNNING = false;
         super.onDestroy();
     }
+
     public boolean initBluetooth() {
         if (mBluetoothManager == null) {
             mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -140,6 +149,7 @@ public class AutoPairServiceNew extends Service {
         mScanCallback = new BleDeviceScanCallback();
         return true;
     }
+
     void closeProfileProxy() {
         if (mBluetoothProfile != null) {
             try {
@@ -150,6 +160,7 @@ public class AutoPairServiceNew extends Service {
             }
         }
     }
+
     private final class InputDeviceServiceListener implements BluetoothProfile.ServiceListener {
         @Override
         public void onServiceConnected(int profile, BluetoothProfile proxy) {
@@ -169,27 +180,23 @@ public class AutoPairServiceNew extends Service {
                 e.printStackTrace();
             }
         }
+
         @Override
         public void onServiceDisconnected(int profile) {
             Log.i(TAG, "InputDeviceServiceListener onServiceDisconnected");
         }
     }
+
     Runnable stopLeScanRunnable = new Runnable() {
         @Override
         public void run() {
 
-            if (mPairingDevice != null) {
-                if (getConnectionStatus(mPairingDevice) == BluetoothProfile.STATE_CONNECTED) {
-                    disOtherDeviceIsConnected();
-                    rmOtherDeviceIsBonded();
-                }
-            }
-            mPairingDevice = null;
 
 
             if (mBluetoothAdapter.isEnabled()) {
                 if (hasDeviceIsConnected() == null) {
-                    if(mBluetoothProfile ==null){
+                    mPairingDevice = null;
+                    if (mBluetoothProfile == null) {
                         //TODO 1.step 获取输出设备的操作对象BluetoothProfile
                         mInputDeviceServiceListener = new InputDeviceServiceListener();
                         mBluetoothAdapter.getProfileProxy(context, mInputDeviceServiceListener, INPUT_DEVICE);
@@ -200,6 +207,12 @@ public class AutoPairServiceNew extends Service {
                     }
 
                 } else {
+                    if (mPairingDevice != null) {
+                        if (getConnectionStatus(mPairingDevice) == BluetoothProfile.STATE_CONNECTED) {
+                            disOtherDeviceIsConnected();
+                            rmOtherDeviceIsBonded();
+                        }
+                    }
                     scanLeDevice(false);
                 }
             } else {
@@ -236,27 +249,29 @@ public class AutoPairServiceNew extends Service {
             }
         }
     }
+
     void startLeScan() {
-        Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> startLeScan" );
+        Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> startLeScan");
         if (mBLEScanner != null)
             mBLEScanner.startScan(mScanFilterList, mScanSettings, mScanCallback);
     }
+
     void stopLeScan() {
-        Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> stopLeScan" );
+        Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> stopLeScan");
         if (mBLEScanner != null) mBLEScanner.stopScan(mScanCallback);
     }
 
-    AutoPairDialog loading;
 
-    public void loding(String txt,Boolean show) {//点击加载并按钮模仿网络请求
-        if(loading==null){
-            loading = new AutoPairDialog(getApplicationContext(), R.style.CustomDialog);
-            loading.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
+    public void loding(String name, String address, String status, Boolean show) {//点击加载并按钮模仿网络请求
 
-        }
-        loading.show();
-        loading.setDialogText(txt);
-        loading.setDialogProgress(show);
+
+        Intent intent1 = new Intent(this, MainDialogActivity.class);
+        intent1.putExtra("name", name);
+        intent1.putExtra("address", address);
+        intent1.putExtra("status", status);
+        intent1.putExtra("show", show);
+        startActivity(intent1);
+
 
     }
 
@@ -273,12 +288,12 @@ public class AutoPairServiceNew extends Service {
 
             mPairingDevice = device;
             scanLeDevice(false);
-            Log.d(TAG, "onScanResult  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<Name:"+mPairingDevice.getName());
-            Log.d(TAG, "onScanResult  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<MAC:"+mPairingDevice.getAddress());
-            Log.d(TAG, "onScanResult  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<RSSI:" +(0 - rssi));
+            Log.d(TAG, "onScanResult  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<Name:" + mPairingDevice.getName());
+            Log.d(TAG, "onScanResult  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<MAC:" + mPairingDevice.getAddress());
+            Log.d(TAG, "onScanResult  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<RSSI:" + (0 - rssi));
             //条件是否匹配
             if (isGoodMatchRc(device, rssi, scanRecord)) {
-                Log.d(TAG, "onScanResult  GoodGoodGoodGoodGoodGoodGoodGood isGoodMatchRc: "+mPairingDevice.getAddress());
+                Log.d(TAG, "onScanResult  GoodGoodGoodGoodGoodGoodGoodGood isGoodMatchRc: " + mPairingDevice.getAddress());
                 //找到可配对的设备，停止LE扫描
                 if (device.getBondState() == BluetoothDevice.BOND_NONE) {
                     //未配对
@@ -287,7 +302,7 @@ public class AutoPairServiceNew extends Service {
                         mHandler.removeCallbacks(stopLeScanRunnable);
                         mHandler.postDelayed(stopLeScanRunnable, SCAN_PERIOD);
 
-                    }else{
+                    } else {
                         removeBond(mPairingDevice);// 若连接失败，移除它
                         mPairingDevice = null;
                         scanLeDevice(true);
@@ -303,10 +318,12 @@ public class AutoPairServiceNew extends Service {
             }
 
         }
+
         @Override
         public void onScanFailed(int errorCode) {
         }
     }
+
     // createBond 匹配状态 已经接受ACTION_UUID后进行连接
     private final BroadcastReceiver mBluetoothReceiver = new BroadcastReceiver() {
         @Override
@@ -315,24 +332,24 @@ public class AutoPairServiceNew extends Service {
 
             switch (action) {
                 case BluetoothAdapter.ACTION_DISCOVERY_STARTED: {
-                    loding("正在搜索遥控器",true);
+                    loding(null,null,"正在搜索遥控器", true);
                 }
                 break;
                 case "android.bluetooth.input.profile.action.CONNECTION_STATE_CHANGED": {
                     int state = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, 0);
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                     Log.i(TAG, "state=" + state + ",device=" + device);
-                    if (mPairingDevice!=null&&mPairingDevice.getAddress().equals(device.getAddress())) {
+                    if (mPairingDevice != null && mPairingDevice.getAddress().equals(device.getAddress())) {
                         if (isHmdDevice(device)) {
                             if (state == BluetoothProfile.STATE_CONNECTING) {//正在连接
-                                loding("正在连接"+device.getName(),true);
+                                loding(device.getName(),device.getAddress(),"正在连接" + device.getName(), true);
                             }
                             if (state == BluetoothProfile.STATE_CONNECTED) {//连接成功
-                                loding("已连接"+device.getName(),false);
+                                loding(device.getName(),device.getAddress(),"已连接" + device.getName(), false);
                                 AutoPairGlobalConfig.setRcMac(mPairingDevice.getAddress());// 设置MAC地址
 
                             } else if (state == BluetoothProfile.STATE_DISCONNECTED) {//连接失败
-                                loding("连接失败",false);
+                                loding(device.getName(),device.getAddress(),"连接失败", false);
 
                             }
                         }
@@ -345,7 +362,7 @@ public class AutoPairServiceNew extends Service {
                     int previousState = intent.getIntExtra(BluetoothAdapter.EXTRA_PREVIOUS_STATE, -1);
                     if (previousState != BluetoothAdapter.STATE_ON && state == BluetoothAdapter.STATE_ON) {
                         mPairingDevice = null;
-                        if(mBluetoothProfile ==null){
+                        if (mBluetoothProfile == null) {
                             //TODO 1.step 获取输出设备的操作对象BluetoothProfile
                             mInputDeviceServiceListener = new InputDeviceServiceListener();
                             mBluetoothAdapter.getProfileProxy(context, mInputDeviceServiceListener, INPUT_DEVICE);
@@ -355,7 +372,7 @@ public class AutoPairServiceNew extends Service {
                             scanLeDevice(true);
                         }
 
-                        loding("正在搜索遥控器",true);
+                        loding(null,null,"正在搜索遥控器", true);
                     }
                 }
                 break;
@@ -364,17 +381,17 @@ public class AutoPairServiceNew extends Service {
                     int state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, -1);
                     int previousState = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, -1);
 
-                    if (mPairingDevice!=null&&mPairingDevice.getAddress().equals(device.getAddress())) {
+                    if (mPairingDevice != null && mPairingDevice.getAddress().equals(device.getAddress())) {
                         if (isHmdDevice(device)) {
                             if (state == BluetoothDevice.BOND_BONDING) {
-                                loding("配对中",true);
+                                loding(device.getName(),device.getAddress(),"配对中", true);
                             }
                             if (state == BluetoothDevice.BOND_BONDED) {
-                                loding("已配对",false);
+                                loding(device.getName(),device.getAddress(),"已配对", false);
 
                             }
                             if (state == BluetoothDevice.BOND_BONDED && previousState == BluetoothDevice.BOND_BONDING) {
-                                loding("正在连接",true);
+                                loding(device.getName(),device.getAddress(),"正在连接", true);
                                 connect(device);//连接设备
                             }
                         }
@@ -383,66 +400,9 @@ public class AutoPairServiceNew extends Service {
                 }
                 break;
             }
-
-
-
-
-
-//
-//            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-//            if (device == null) return;
-//            if(mPairingDevice == null) {
-//                if (isHmdDevice(device)) {
-//                    if (action.equals(ACTION_CONNECTION_STATE_CHANGED)) {
-//                        int connectState = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_CONNECTED);
-//                        if (connectState == BluetoothProfile.STATE_CONNECTED) {// 遥控器连接后是否关闭扫描
-//                            scanLeDevice(false);
-//                        } else if (connectState == BluetoothProfile.STATE_DISCONNECTED) {// 遥控器断开后断是否开启扫描
-//                            if (hasDeviceIsConnected() != null) {
-//                                AutoPairGlobalConfig.setRcMac(device.getAddress());// 设置MAC地址
-//                                if(!KEEP_SCAN) //可能是替换设备，此时不能关闭扫描
-//                                    scanLeDevice(false);
-//                            } else {
-//                                scanLeDevice(true);
-//                            }
-//                        }
-//                    }
-//                }
-//            } else {
-//                // 配对时发生的状态改变
-//                if (mPairingDevice.getAddress().equals(device.getAddress())) {
-//                    // 接收到了UUID直接尝试连接
-//                    if (action.equals(ACTION_UUID)) {
-//                        connect(device);
-//                    } else  if (action.equals(ACTION_BOND_STATE_CHANGED)) { // 是否是正在连接设备的状态的改变
-//                        int bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
-//                        if (bondState == BluetoothDevice.BOND_NONE) { // 绑定失败
-//                            mHandler.sendEmptyMessageDelayed(PairHandler.MSG_PAIR_FAIL, 20000);
-//                        } else if (bondState == BluetoothDevice.BOND_BONDING) { // 正在绑定...
-//                            mHandler.removeMessages(PairHandler.MSG_PAIR_FAIL);
-//                        } else if (bondState == BluetoothDevice.BOND_BONDED) { // 绑定成功
-//                            mHandler.removeMessages(PairHandler.MSG_PAIR_FAIL);
-//                        } else if (bondState == BluetoothDevice.ERROR) {
-//                            mHandler.sendEmptyMessage(PairHandler.MSG_PAIR_FAIL);
-//                        }
-//                    } else if (action.equals(ACTION_CONNECTION_STATE_CHANGED)) {
-//                        int connectState = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_CONNECTED);
-//                        if (connectState == BluetoothProfile.STATE_DISCONNECTED) { // 连接失败
-//                            mHandler.removeMessages(PairHandler.MSG_PAIR_TIMEOUT);
-//                            mHandler.sendEmptyMessage(PairHandler.MSG_PAIR_FAIL);
-//                        } else if (connectState == BluetoothProfile.STATE_CONNECTING) { // 连接中...
-//                            mHandler.removeMessages(PairHandler.MSG_PAIR_FAIL);
-//                        } else if (connectState == BluetoothProfile.STATE_CONNECTED) { // 连接成功
-//                            mHandler.removeMessages(PairHandler.MSG_PAIR_TIMEOUT);
-//                            mHandler.removeMessages(PairHandler.MSG_PAIR_FAIL);
-//                            mHandler.sendEmptyMessage(PairHandler.MSG_PAIR_SUCESS);
-//                            AutoPairGlobalConfig.setRcMac(mPairingDevice.getAddress());// 设置MAC地址
-//                        }
-//                    }
-//                }
-//            }
         }
     };
+
     private void removeBond(BluetoothDevice device) {
         if (device != null) {
             int state = device.getBondState();
@@ -465,6 +425,7 @@ public class AutoPairServiceNew extends Service {
             }
         }
     }
+
     public boolean createBond(BluetoothDevice device) {
         if (device != null) {
             if (device.getBondState() == BluetoothDevice.BOND_NONE) {
@@ -473,6 +434,7 @@ public class AutoPairServiceNew extends Service {
         }
         return false;
     }
+
     public void connect(BluetoothDevice device) {
         if (mBluetoothProfile != null && device != null) {
             try {
@@ -489,6 +451,7 @@ public class AutoPairServiceNew extends Service {
             }
         }
     }
+
     void disconnect(final BluetoothDevice device) {
         try {
             Method method = mBluetoothProfile.getClass().getMethod("disconnect", new Class[]{BluetoothDevice.class});
@@ -497,12 +460,14 @@ public class AutoPairServiceNew extends Service {
             e.printStackTrace();
         }
     }
+
     public int getConnectionStatus(BluetoothDevice device) {
         if (mBluetoothProfile == null) {
             return BluetoothProfile.STATE_DISCONNECTED;
         }
         return mBluetoothProfile.getConnectionState(device);
     }
+
     // ########################################  配对过滤条件  ###########################################
     private static final int BLE_RSSI = 100;
     private static final int COMPLETE_NAME_FLAG = 0x09;
@@ -512,6 +477,7 @@ public class AutoPairServiceNew extends Service {
     private static final int UUID128_SERVICE_FLAG_COMPLETE = 0x07;
     private static final int HOGP_UUID16 = 0x1812;
     private long matchTime = 0;
+
     private boolean isGoodMatchRc(BluetoothDevice device, final int rssi, byte[] scanRecord) {
         boolean isHIMEDIARc;
         if (isHmdDevice(device)) {
@@ -523,14 +489,15 @@ public class AutoPairServiceNew extends Service {
         if (isHIMEDIARc && isHOGPDevice) {
             if ((0 - rssi) <= BLE_RSSI) {
                 return true;
-            } else if( System.currentTimeMillis() - matchTime > 10*1000) {
-                mHandler.sendEmptyMessage(PairHandler.MSG_RSSI_LOW);
+            } else if (System.currentTimeMillis() - matchTime > 10 * 1000) {
+                loding(device.getName(),device.getAddress(),"信号弱",false);
                 matchTime = System.currentTimeMillis();
             }
         }
         return false;
     }
-    public  boolean isHmdDevice(BluetoothDevice device) {
+
+    public boolean isHmdDevice(BluetoothDevice device) {
         if (device != null) {
             if (device.getAddress().equals(AutoPairGlobalConfig.getRcMac())) {
                 return true;
@@ -542,8 +509,9 @@ public class AutoPairServiceNew extends Service {
         }
         return false;
     }
+
     // 是否有连接的遥控器
-    private  BluetoothDevice hasDeviceIsConnected() {
+    private BluetoothDevice hasDeviceIsConnected() {
         if (mBluetoothProfile != null) {
             List<BluetoothDevice> deviceList = mBluetoothProfile.getConnectedDevices();
             for (BluetoothDevice device : deviceList) {
@@ -554,6 +522,7 @@ public class AutoPairServiceNew extends Service {
         }
         return null;
     }
+
     // 是否有已绑定的遥控器
     private BluetoothDevice hasDeviceIsBonded() {
         if (mBluetoothAdapter != null) {
@@ -566,6 +535,7 @@ public class AutoPairServiceNew extends Service {
         }
         return null;
     }
+
     /* we only care 16bit UUID now */
     public static synchronized boolean containHogpUUID(byte[] scanRecord) {
         int i, j, length = scanRecord.length;
@@ -587,6 +557,7 @@ public class AutoPairServiceNew extends Service {
         }
         return false;
     }
+
     public static synchronized boolean isNameMatchExName(String name, byte[] scanRecord) {
         int i = 0;
         int length = scanRecord.length;
@@ -611,115 +582,14 @@ public class AutoPairServiceNew extends Service {
         }
         return false;
     }
+
     // ########################################  UI  ###########################################
-    private class PairHandler extends Handler {
-        private static final int MSG_SHOW_DIALOG = 0x1;
-        private static final int MSG_DIS_DIALOG = 0x2;
-        private static final int MSG_PAIR_TIMEOUT = 0x3;
-        private static final int MSG_PAIR_SUCESS = 0x4;
-        private static final int MSG_PAIR_FAIL = 0x5;
-        private static final int MSG_RSSI_LOW = 0x6;
-        private static final int MSG_TIMEOUIT_REBT = 0x7;
-        private static final int MSG_REBT = 0x7;
-        private final WeakReference<Context> mContext;
-        public PairHandler(Context context) {
-            mContext = new WeakReference<Context>(context);
-        }
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case MSG_SHOW_DIALOG:
-                    if (mPairDialog != null) {
-                        mPairDialog.show();
-                        showDialogProgress(true);
-                        setDialogText(R.string.auto_pairng);
-                    }
-                    break;
-                case MSG_DIS_DIALOG:
-                    mHandler.removeMessages(MSG_PAIR_TIMEOUT);
-                    mHandler.removeMessages(MSG_PAIR_FAIL);
-                    mPairDialog.dismiss();
-                    disDialogPair();
-                    break;
-                case MSG_PAIR_TIMEOUT:
-                    mHandler.removeCallbacksAndMessages(null);
-                    showDialogProgress(false);
-                    setDialogText(R.string.auto_pair_timeout);
-                    disDialog(3);
-                    // 配对超时，可能是蓝牙服务出问题了，可以重新启动蓝牙
-                    // mHandler.sendEmptyMessageDelayed(MSG_TIMEOUIT_REBT,3000);
-                    break;
-                case MSG_PAIR_SUCESS:
-                    showDialogProgress(false);
-                    setDialogText(R.string.auto_pair_sucess);
-                    disDialog(3);
-                    break;
-                case MSG_PAIR_FAIL:
-                    mHandler.removeMessages(MSG_PAIR_FAIL);
-                    mHandler.removeMessages(MSG_PAIR_TIMEOUT);
-                    mHandler.removeMessages(MSG_RSSI_LOW);
-                    //mBluetoothAdapter.disable();//关闭蓝牙
-                    //mHandler.sendEmptyMessageDelayed(MSG_TIMEOUIT_REBT,3000);
-                    showDialogProgress(false);
-                    setDialogText(R.string.auto_pair_fail);
-                    disDialog(3);
-                    break;
-                case MSG_RSSI_LOW:
-                    mHandler.removeMessages(MSG_RSSI_LOW);
-                    showDialogProgress(false);
-                    setDialogText(R.string.auto_pair_rssi_low);
-                    disDialog(3);
-                    break;
-                case MSG_TIMEOUIT_REBT:
-                    mBluetoothAdapter.enable();//重新开启蓝牙
-                    break;
-                default:
-                    super.handleMessage(msg);
-                    break;
-            }
-        }
-    }
-    public AutoPairDialog mPairDialog;
+
     public void initUI() {
-        if (mPairDialog == null) {
-            mPairDialog = new AutoPairDialog(this);
-            mPairDialog.getWindow().setType((WindowManager.LayoutParams.TYPE_SYSTEM_ALERT));
-            mHandler = new PairHandler(this.getBaseContext());
-        }
+        mHandler = new Handler();
     }
-    public void showDialog() {
-        mHandler.removeCallbacksAndMessages(null);
-        mHandler.sendEmptyMessage(PairHandler.MSG_SHOW_DIALOG);
-        mHandler.sendEmptyMessageDelayed(PairHandler.MSG_PAIR_TIMEOUT, 15 * 1000);// 15s超时
-    }
-    public void disDialog(int time) {
-        mHandler.removeCallbacksAndMessages(null);
-        mHandler.sendEmptyMessageDelayed(PairHandler.MSG_DIS_DIALOG, time * 1000);
-    }
-    public void setDialogText(int resid) {
-        if (mPairDialog != null)
-            mPairDialog.setDialogText(mPairDialog.getContext().getResources().getString(resid));
-    }
-    public void showDialogProgress(boolean show) {
-        if (mPairDialog != null) mPairDialog.setDialogProgress(show);
-    }
-    public void disDialogPair() {
-        if (mPairingDevice != null) {
-            // 没连接成功
-            if (getConnectionStatus(mPairingDevice) == BluetoothProfile.STATE_CONNECTED) {
-                disOtherDeviceIsConnected();
-                rmOtherDeviceIsBonded();
-            } else {
-                removeBond(mPairingDevice);
-            }
-        }
-        mPairingDevice = null;
-        if (hasDeviceIsConnected() != null) {
-            scanLeDevice(false);
-        } else {
-            scanLeDevice(true);
-        }
-    }
+
+
     // 断开有连接的遥控器
     private void disOtherDeviceIsConnected() {
         if (mBluetoothProfile != null) {
@@ -734,6 +604,7 @@ public class AutoPairServiceNew extends Service {
             }
         }
     }
+
     private void rmOtherDeviceIsBonded() {
         Set<BluetoothDevice> deviceList = mBluetoothAdapter.getBondedDevices();
         for (BluetoothDevice device : deviceList) {
@@ -745,17 +616,21 @@ public class AutoPairServiceNew extends Service {
             }
         }
     }
+
     // #################################################################################################
     // AIDL 可以调用
     private final IBinder mBinder = new LocalBinder();
+
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
     }
+
     @Override
     public boolean onUnbind(Intent intent) {
         return super.onUnbind(intent);
     }
+
     public class LocalBinder extends Binder {
         AutoPairServiceNew getService() {
             return AutoPairServiceNew.this;

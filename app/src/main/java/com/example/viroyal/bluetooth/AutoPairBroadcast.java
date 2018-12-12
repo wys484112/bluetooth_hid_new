@@ -20,18 +20,9 @@ public class AutoPairBroadcast extends BroadcastReceiver {
         if (action == null) return;
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter == null) return;
-
-        enablePairService(context, true);
-
-
-//        if (bluetoothAdapter.getProfileConnectionState(MainActivity2.INPUT_DEVICE) == BluetoothProfile.STATE_CONNECTED)
-//            return;
-//        if (action.equals(Intent.ACTION_BOOT_COMPLETED)) {
-//            ComponentName componentName = new ComponentName("com.example.viroyal.bluetooth", "com.example.viroyal.bluetooth.MainActivity2");
-//            intent.setComponent(componentName);
-//            context.startActivity(intent);
-//        }
-
+        if(action.equals(Intent.ACTION_BOOT_COMPLETED)){
+            enablePairService(context, true);
+        }
     }
 
     public void enablePairService(Context context, boolean pair) {
