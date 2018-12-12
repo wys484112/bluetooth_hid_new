@@ -4,7 +4,7 @@
     android:layout_width="540dp"
     android:layout_height="405dp"
     android:animateLayoutChanges="true"
-    android:background="@android:color/holo_blue_light"
+    android:background="@android:color/holo_blue_dark"
     android:gravity="center"
     android:orientation="vertical">
 
@@ -40,6 +40,7 @@
         android:focusableInTouchMode="true"
         android:text="@string/phicom_status"
         android:textSize="18sp" />
+
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
