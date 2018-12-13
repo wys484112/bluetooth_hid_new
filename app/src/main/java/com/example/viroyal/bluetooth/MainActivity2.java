@@ -15,6 +15,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -49,34 +50,24 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
     private static final String TAG = "wwww";
     public static final int INPUT_DEVICE = 4;
     private BluetoothProfile mBluetoothProfile;
-
-    private ArrayList<BluetoothDevice> devices = new ArrayList<BluetoothDevice>();
-
     private BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-    private TextView txt_name, txt_address,txt_status;
+
+    private TextView txt_name, txt_address, txt_status;
     private Context context;
     private long delayMillis = 15 * 1000;
 
     private Handler TimerHandler = new Handler();                   //创建一个Handler对象
+    private CountDownTimer mTimer;
+
+
     Runnable myTimerRun = new Runnable()                //创建一个runnable对象
-
     {
-
         @Override
-        public void run()
-
-        {
-
+        public void run() {
             workThreadInit();
             TimerHandler.postDelayed(this, delayMillis);      //再次调用myTimerRun对象，实现每两秒一次的定时器操作
-
         }
-
     };
-
-    //该UUID表示串口服务
-    //请参考文章<a href="http://wiley.iteye.com/blog/1179417">http://wiley.iteye.com/blog/1179417</a>
-    static final String SPP_UUID = "00001101-0000-1000-8000-00805F9B34FB";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,31 +98,29 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
     }
 
     private void openBluetooth() {
-
-        devices.clear();
         if (adapter == null) {
             Toast.makeText(this, "不支持蓝牙功能", Toast.LENGTH_SHORT).show();
             // 不支持蓝牙
             return;
         }
-
-        if(mBluetoothProfile!=null){
+        if (mBluetoothProfile != null) {
             workThreadInit();
             readPhicomPERIPHERALDevices();
-        }else{
+        } else {
+            updatePhicomPERIPHERALDeviceStatus("正在开启搜索");
             adapter.getProfileProxy(context, mListener,
                     INPUT_DEVICE);
         }
         TimerHandler.postDelayed(myTimerRun, delayMillis);        //使用postDelayed方法，两秒后再调用此myTimerRun对象
-
-
-
     }
 
     private void workThreadInit() {
         if (adapter.isEnabled()) {
-            if (adapter.getProfileConnectionState(INPUT_DEVICE) == BluetoothProfile.STATE_CONNECTED) {
+            if (hasDeviceIsConnected()!=null) {
+                finish();//已经连接 退出界面；
             } else {
+                Log.e("wwww","workThreadInit == startDiscovery");
+                updatePhicomPERIPHERALDeviceStatus("正在搜索遥控器");
                 cleanBoundedPhicomPERIPHERALDevices();
                 startDiscovery();
             }
@@ -149,7 +138,18 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
         }
 
     }
-
+    // 是否有连接的遥控器
+    private BluetoothDevice hasDeviceIsConnected() {
+        if (mBluetoothProfile != null) {
+            List<BluetoothDevice> deviceList = mBluetoothProfile.getConnectedDevices();
+            for (BluetoothDevice device : deviceList) {
+                if (isPhicomPERIPHERAL(device)) {
+                    return device;
+                }
+            }
+        }
+        return null;
+    }
     private BluetoothProfile.ServiceListener mListener = new BluetoothProfile.ServiceListener() {
         @Override
         public void onServiceConnected(int profile, BluetoothProfile proxy) {
@@ -157,7 +157,10 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
             //BluetoothProfile proxy这个已经是BluetoothInputDevice类型了
             try {
                 if (profile == INPUT_DEVICE) {
+                    Log.e("wwww","profile == INPUT_DEVICE");
                     mBluetoothProfile = proxy;
+                    workThreadInit();
+                    readPhicomPERIPHERALDevices();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -205,11 +208,10 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
                         }
 
                         if (state == BluetoothProfile.STATE_CONNECTED) {//连接成功
-//                        Toast.makeText(MainActivity2.this, "已连接", Toast.LENGTH_SHORT).show();
-                            updatePhicomPERIPHERALDeviceStatus("已连接"+device.getName());
+                            updatePhicomPERIPHERALDeviceStatus("已连接" + device.getName());
+                            finish();
 
                         } else if (state == BluetoothProfile.STATE_DISCONNECTED) {//连接失败
-//                        Toast.makeText(MainActivity2.this, "连接失败", Toast.LENGTH_SHORT).show();
                             updatePhicomPERIPHERALDeviceStatus("连接失败");
 
                         }
@@ -221,9 +223,14 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
                     int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1);
                     int previousState = intent.getIntExtra(BluetoothAdapter.EXTRA_PREVIOUS_STATE, -1);
                     if (previousState != BluetoothAdapter.STATE_ON && state == BluetoothAdapter.STATE_ON) {
-                        cleanBoundedPhicomPERIPHERALDevices();
-                        startDiscovery();
-                        updatePhicomPERIPHERALDeviceStatus("正在搜索遥控器");
+                        if (mBluetoothProfile != null) {
+                            workThreadInit();
+                            readPhicomPERIPHERALDevices();
+                        } else {
+                            updatePhicomPERIPHERALDeviceStatus("正在开启搜索");
+                            adapter.getProfileProxy(context, mListener,
+                                    INPUT_DEVICE);
+                        }
 
                     }
                 }
@@ -240,19 +247,15 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
 
                     if (isPhicomPERIPHERAL(device)) {
                         if (state == BluetoothDevice.BOND_BONDING) {
-//                            Toast.makeText(MainActivity2.this, "配对中", Toast.LENGTH_LONG).show();
                             updatePhicomPERIPHERALDeviceStatus("配对中");
 
                         }
                         if (state == BluetoothDevice.BOND_BONDED) {
-//                            Toast.makeText(MainActivity2.this, "已配对", Toast.LENGTH_LONG).show();
                             updatePhicomPERIPHERALDeviceStatus("已配对");
 
                         }
                         if (state == BluetoothDevice.BOND_BONDED && previousState == BluetoothDevice.BOND_BONDING) {
-//                            Toast.makeText(MainActivity2.this, "正在连接", Toast.LENGTH_LONG).show();
                             updatePhicomPERIPHERALDeviceStatus("正在连接");
-
                             connect(device);//连接设备
                         }
                     }
@@ -261,16 +264,14 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
                 }
 
                 break;
+
                 case BluetoothDevice.ACTION_FOUND: {
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                     //外部设备
+                    Log.e("wwww", "found");
                     if (isPhicomPERIPHERAL(device)) {
                         txt_name.setText(device.getName());
                         txt_address.setText(device.getAddress());
-                        if (!devices.contains(device)) {
-                            devices.add(device);
-                        }
-
                         if (adapter.isDiscovering()) {
                             adapter.cancelDiscovery();
                         }
@@ -278,11 +279,9 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
                         if (device.getBondState() == BluetoothDevice.BOND_NONE) {
                             try {
                                 createBond(BluetoothDevice.class, device);
-//                                Toast.makeText(MainActivity2.this, "正在配对", Toast.LENGTH_LONG).show();
                                 updatePhicomPERIPHERALDeviceStatus("正在配对");
 
                             } catch (Exception e) {
-//                                Toast.makeText(MainActivity2.this, "配对失败", Toast.LENGTH_LONG).show();
                                 updatePhicomPERIPHERALDeviceStatus("配对失败");
 
                                 e.printStackTrace();
@@ -291,9 +290,7 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
                         } else if (device.getBondState() == BluetoothDevice.BOND_BONDED) {
                             //已配对
                             try {
-//                                Toast.makeText(MainActivity2.this, "已配对，正在连接", Toast.LENGTH_LONG).show();
                                 updatePhicomPERIPHERALDeviceStatus("已配对，正在连接");
-
                                 connect(device);
                             } catch (Exception e) {
                                 e.printStackTrace();
@@ -312,6 +309,19 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
         }
     };
 
+
+    void closeProfileProxy() {
+        if (mBluetoothProfile != null) {
+            try {
+                adapter.closeProfileProxy(INPUT_DEVICE, mBluetoothProfile);
+                mBluetoothProfile = null;
+            } catch (Throwable t) {
+                Log.e(TAG, "Error cleaning up HID proxy", t);
+            }
+        }
+    }
+
+
     private void cleanBoundedPhicomPERIPHERALDevices() {
         Set<BluetoothDevice> bondedDevices = adapter.getBondedDevices();
         if (bondedDevices != null) {
@@ -329,7 +339,7 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
                         final BluetoothDevice dev = device;
                         if (dev != null) {
                             try {
-                                final boolean successful =cancelBondProcess(BluetoothDevice.class, device);
+                                final boolean successful = cancelBondProcess(BluetoothDevice.class, device);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -348,10 +358,10 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
             for (BluetoothDevice device : bondedDevices) {
                 if (isPhicomPERIPHERAL(device)) {
                     try {
-                        if(isConnected(BluetoothDevice.class, device)){
+                        if (isConnected(BluetoothDevice.class, device)) {
                             txt_name.setText(device.getName());
                             txt_address.setText(device.getAddress());
-                            updatePhicomPERIPHERALDeviceStatus("已连接"+device.getName());
+                            updatePhicomPERIPHERALDeviceStatus("已连接" + device.getName());
                             return;
                         }
                     } catch (Exception e) {
@@ -363,7 +373,7 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
         updatePhicomPERIPHERALDeviceStatus("未连接遥控器");
     }
 
-    private void  updatePhicomPERIPHERALDeviceStatus(String status){
+    private void updatePhicomPERIPHERALDeviceStatus(String status) {
         txt_status.setText(status);
 
     }
@@ -466,8 +476,14 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        TimerHandler.removeCallbacks(myTimerRun);
+        Log.e("wwww", "ondestroy");
         unregisterReceiver(receiver);
+        if (adapter.isDiscovering()) {
+            adapter.cancelDiscovery();
+        }
+
+        closeProfileProxy();
+        TimerHandler.removeCallbacks(myTimerRun);
     }
 
     @Override
@@ -477,8 +493,6 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
     }
-
 }
+      

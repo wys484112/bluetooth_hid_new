@@ -9,7 +9,7 @@ import android.content.Intent;
 import android.util.Log;
 
 public class AutoPairBroadcast extends BroadcastReceiver {
-    private final String TAG = "AutoPairBroadcast";
+    private final String TAG = "wwww";
     private BluetoothAdapter bluetoothAdapter;
 
     @Override
@@ -17,11 +17,26 @@ public class AutoPairBroadcast extends BroadcastReceiver {
         // TODO: This method is called when the BroadcastReceiver is receiving
         // an Intent broadcast.
         String action = intent.getAction();
-        if (action == null) return;
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (bluetoothAdapter == null) return;
+//        if (action == null) return;
+//        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+//        if (bluetoothAdapter == null) return;
         if(action.equals(Intent.ACTION_BOOT_COMPLETED)){
-            enablePairService(context, true);
+//            Log.e("wwww","ACTION_BOOT_COMPLETED");
+//            Intent activityintent=new Intent(context,MainActivity2.class);
+//            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//            context.startActivity(activityintent);
+
+
+
+//            Intent i = new Intent();
+//            ComponentName cn = new ComponentName("com.example.viroyal.bluetooth",  "com.example.viroyal.bluetooth.MainActivity2");
+//            i.setComponent(cn);
+//            i.setAction("android.intent.action.MAIN");
+//            context.startActivity(i); //or startActivityForResult(i, RESULT_OK);
+
+            Intent it = new Intent(" com.qylk.call.main "); context.startActivity(it);
+
+//            enablePairService(context, true);
         }
     }
 

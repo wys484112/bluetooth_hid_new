@@ -26,6 +26,10 @@ public class MainDialogActivity extends Activity {
         txt_status = (TextView) findViewById(R.id.txt_status);
         mProgress = (ProgressBar) findViewById(R.id.pb_load);
         processExtraData();
+
+        Intent autoPairService = new Intent(context, AutoPairServiceNew.class);
+            startService(autoPairService);
+
     }
 
     @Override

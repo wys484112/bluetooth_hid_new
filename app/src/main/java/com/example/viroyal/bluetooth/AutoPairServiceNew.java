@@ -3,6 +3,7 @@ package com.example.viroyal.bluetooth;
 import android.annotation.SuppressLint;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -137,15 +138,15 @@ public class AutoPairServiceNew extends Service {
         if (!mBluetoothAdapter.isEnabled()) {
             mBluetoothAdapter.enable();//强制开启蓝牙
         }
-
-        mBLEScanner = mBluetoothAdapter.getBluetoothLeScanner();
-        if (mBLEScanner == null) {
-            Log.e(TAG, "Unable to obtain a BluetoothLeScanner.");
-            return false;
-        }
-        mScanFilterList = new ArrayList<ScanFilter>();
-        mScanSettings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
-        mScanCallback = new BleDeviceScanCallback();
+//
+//        mBLEScanner = mBluetoothAdapter.getBluetoothLeScanner();
+//        if (mBLEScanner == null) {
+//            Log.e(TAG, "Unable to obtain a BluetoothLeScanner.");
+//            return false;
+//        }
+//        mScanFilterList = new ArrayList<ScanFilter>();
+//        mScanSettings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
+//        mScanCallback = new BleDeviceScanCallback();
         return true;
     }
 
@@ -169,6 +170,7 @@ public class AutoPairServiceNew extends Service {
                     Log.i(TAG, "InputDeviceServiceListener onServiceConnected");
                     // TODO 2.step
                     if (hasDeviceIsConnected() == null) {
+                        mPairingDevice = null;
                         cleanBoundDevices();
                         scanLeDevice(true);
                     } else {
@@ -205,12 +207,12 @@ public class AutoPairServiceNew extends Service {
                     }
 
                 } else {
-                    if (mPairingDevice != null) {
-                        if (getConnectionStatus(mPairingDevice) == BluetoothProfile.STATE_CONNECTED) {
-                            disOtherDeviceIsConnected();
-                            rmOtherDeviceIsBonded();
-                        }
-                    }
+//                    if (mPairingDevice != null) {
+//                        if (getConnectionStatus(mPairingDevice) == BluetoothProfile.STATE_CONNECTED) {
+//                            disOtherDeviceIsConnected();
+//                            rmOtherDeviceIsBonded();
+//                        }
+//                    }
                     scanLeDevice(false);
                 }
             } else {
@@ -236,34 +238,43 @@ public class AutoPairServiceNew extends Service {
 
     public void scanLeDevice(final boolean enable) {
         if (enable) {
-            if (!mScanning) {
-                mScanning = true;
-                startLeScan();
-            }
+            startLeScan();
+            loading(null,null,"正在搜索遥控器", true);
         } else {
-            if (mScanning) {
-                mScanning = false;
-                stopLeScan();
-            }
+            stopLeScan();
         }
     }
 
-    void startLeScan() {
-        Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> startLeScan");
-        if (mBLEScanner != null)
-            mBLEScanner.startScan(mScanFilterList, mScanSettings, mScanCallback);
+//    void startLeScan() {
+//        Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> startLeScan");
+//        if (mBLEScanner != null)
+//            mBLEScanner.startScan(mScanFilterList, mScanSettings, mScanCallback);
+//    }
+    private void startLeScan() {
+        if (mBluetoothAdapter.isEnabled()) {
+            if (mBluetoothAdapter.isDiscovering()) {
+                return;
+            }
+            mBluetoothAdapter.startDiscovery();
+        }
+    }
+    void stopLeScan() {
+        if (mBluetoothAdapter.isDiscovering()) {
+            mBluetoothAdapter.cancelDiscovery();
+        }
     }
 
-    void stopLeScan() {
-        Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> stopLeScan");
-        if (mBLEScanner != null) mBLEScanner.stopScan(mScanCallback);
-    }
+//    void stopLeScan() {
+//        Log.d(TAG, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> stopLeScan");
+//        if (mBLEScanner != null) mBLEScanner.stopScan(mScanCallback);
+//    }
 
 
     public void loading(String name, String address, String status, Boolean show) {//点击加载并按钮模仿网络请求
 
 
-        Intent intent1 = new Intent(this, MainDialogActivity.class);
+        Intent intent1 = new Intent(context, MainDialogActivity.class);
+        intent1.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent1.putExtra("name", name);
         intent1.putExtra("address", address);
         intent1.putExtra("status", status);
@@ -284,35 +295,41 @@ public class AutoPairServiceNew extends Service {
                 return;
             }
 
-            mPairingDevice = device;
             scanLeDevice(false);
-            Log.d(TAG, "onScanResult  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<Name:" + mPairingDevice.getName());
-            Log.d(TAG, "onScanResult  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<MAC:" + mPairingDevice.getAddress());
-            Log.d(TAG, "onScanResult  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<RSSI:" + (0 - rssi));
+            if(mPairingDevice!=null){
+                return;
+            }
+            if(AutoPairGlobalConfig.DEF_NAME.equals(device.getName())){
+                Log.d(TAG, "onScanResult  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<Name:" + device.getName());
+                Log.d(TAG, "onScanResult  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<MAC:" + device.getAddress());
+                Log.d(TAG, "onScanResult  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<RSSI:" + (0 - rssi));
+            }
+
             //条件是否匹配
             if (isGoodMatchRc(device, rssi, scanRecord)) {
+                mPairingDevice = device;
                 Log.d(TAG, "onScanResult  GoodGoodGoodGoodGoodGoodGoodGood isGoodMatchRc: " + mPairingDevice.getAddress());
                 //找到可配对的设备，停止LE扫描
                 if (device.getBondState() == BluetoothDevice.BOND_NONE) {
                     //未配对
-                    if (createBond(device)) {
-                        // TODO 4.step 等待广播mBluetoothReceiver更新结果
-                        mHandler.removeCallbacks(stopLeScanRunnable);
-                        mHandler.postDelayed(stopLeScanRunnable, SCAN_PERIOD);
-
-                    } else {
-                        removeBond(mPairingDevice);// 若连接失败，移除它
-                        mPairingDevice = null;
-                        scanLeDevice(true);
+                    try {
+                        if (createBond(BluetoothDevice.class, device)) {
+                            // TODO 4.step 等待广播mBluetoothReceiver更新结果
+                        } else {
+                            removeBond(mPairingDevice);// 若连接失败，移除它
+                            mPairingDevice = null;
+                            scanLeDevice(true);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 } else if (device.getBondState() == BluetoothDevice.BOND_BONDED) {
                     //已配对
-                    mHandler.removeCallbacks(stopLeScanRunnable);
-                    mHandler.postDelayed(stopLeScanRunnable, SCAN_PERIOD);
                     connect(device);
                 }
             } else {
                 mPairingDevice = null;
+                scanLeDevice(true);
             }
 
         }
@@ -337,7 +354,7 @@ public class AutoPairServiceNew extends Service {
                     int state = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, 0);
                     BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                     Log.i(TAG, "state=" + state + ",device=" + device);
-                    if (mPairingDevice != null && mPairingDevice.getAddress().equals(device.getAddress())) {
+                    {
                         if (isHmdDevice(device)) {
                             if (state == BluetoothProfile.STATE_CONNECTING) {//正在连接
                                 loading(device.getName(),device.getAddress(),"正在连接" + device.getName(), true);
@@ -378,7 +395,7 @@ public class AutoPairServiceNew extends Service {
                     int state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, -1);
                     int previousState = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, -1);
 
-                    if (mPairingDevice != null && mPairingDevice.getAddress().equals(device.getAddress())) {
+                    {
                         if (isHmdDevice(device)) {
                             if (state == BluetoothDevice.BOND_BONDING) {
                                 loading(device.getName(),device.getAddress(),"配对中", true);
@@ -396,6 +413,49 @@ public class AutoPairServiceNew extends Service {
 
                 }
                 break;
+
+                case BluetoothDevice.ACTION_FOUND: {
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    //外部设备
+                    Log.e("wwww","found  "+device.getName());
+                    if (isHmdDevice(device)) {
+
+
+                        if (mBluetoothAdapter.isDiscovering()) {
+                            mBluetoothAdapter.cancelDiscovery();
+                        }
+
+                        if (device.getBondState() == BluetoothDevice.BOND_NONE) {
+                            try {
+                                createBond(BluetoothDevice.class, device);
+//                                Toast.makeText(MainActivity2.this, "正在配对", Toast.LENGTH_LONG).show();
+//                                updatePhicomPERIPHERALDeviceStatus("正在配对");
+                                loading(device.getName(),device.getAddress(),"正在配对", true);
+
+                            } catch (Exception e) {
+//                                Toast.makeText(MainActivity2.this, "配对失败", Toast.LENGTH_LONG).show();
+//                                updatePhicomPERIPHERALDeviceStatus("配对失败");
+                                loading(device.getName(),device.getAddress(),"配对失败", false);
+
+                                e.printStackTrace();
+                            }
+                            //未配对
+                        } else if (device.getBondState() == BluetoothDevice.BOND_BONDED) {
+                            //已配对
+                            try {
+//                                Toast.makeText(MainActivity2.this, "已配对，正在连接", Toast.LENGTH_LONG).show();
+//                                updatePhicomPERIPHERALDeviceStatus("已配对，正在连接");
+                                loading(device.getName(),device.getAddress(),"已配对，正在连接", true);
+
+                                connect(device);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+
+                    }
+                }
             }
         }
     };
@@ -423,14 +483,21 @@ public class AutoPairServiceNew extends Service {
         }
     }
 
-    public boolean createBond(BluetoothDevice device) {
-        if (device != null) {
-            if (device.getBondState() == BluetoothDevice.BOND_NONE) {
-                return device.createBond();
-            }
-        }
-        return false;
-    }
+//    public boolean createBond(BluetoothDevice device) {
+//        if (device != null) {
+//            if (device.getBondState() == BluetoothDevice.BOND_NONE) {
+//                return device.createBond();
+//            }
+//        }
+//        return false;
+//    }
+//开始配对
+public boolean createBond(Class btClass, BluetoothDevice device) throws Exception {
+    Method createBondMethod = btClass.getMethod("createBond");
+    Boolean returnValue = (Boolean) createBondMethod.invoke(device);
+    return returnValue.booleanValue();
+
+}
 
     public void connect(BluetoothDevice device) {
         if (mBluetoothProfile != null && device != null) {
@@ -495,13 +562,13 @@ public class AutoPairServiceNew extends Service {
     }
 
     public boolean isHmdDevice(BluetoothDevice device) {
-        if (device != null) {
-            if (device.getAddress().equals(AutoPairGlobalConfig.getRcMac())) {
-                return true;
-            }
+        if (device != null && device.getBluetoothClass().getMajorDeviceClass() == BluetoothClass.Device.Major.PERIPHERAL) {
+//            if (device.getAddress().equals(AutoPairGlobalConfig.getRcMac())) {
+//                return true;
+//            }
             if (device.getName() != null) {
                 if (device.getName().startsWith(AutoPairGlobalConfig.DEF_NAME)) return true;
-                if (device.getName().startsWith(AutoPairGlobalConfig.getRcName())) return true;
+//                if (device.getName().startsWith(AutoPairGlobalConfig.getRcName())) return true;
             }
         }
         return false;
