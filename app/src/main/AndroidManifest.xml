@@ -10,33 +10,40 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
+        android:name="CustomerApplicaion"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity2"
+
+        <meta-data
+            android:name="AA_DB_NAME"
+            android:value="database_aa.db"></meta-data>
+        <meta-data
+            android:name="AA_DB_VERSION"
+            android:value="1"></meta-data>
+
+        <activity
+            android:name=".MainActivity2"
             android:launchMode="singleTask">
-
-
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
-            <action android:name=" com.qylk.call.main" />    <!-- 自定义的action-->
-            <category android:name="android.intent.category.LAUNCHER" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <action android:name=" com.qylk.call.main" /> <!-- 自定义的action -->
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-
         <activity
             android:name=".MainDialogActivity"
             android:launchMode="singleTask"
             android:theme="@style/Theme.ActivityDialogStyle">
 
-            <!--<intent-filter>-->
-            <!--<action android:name="android.intent.action.MAIN" />-->
+            <!-- <intent-filter> -->
+            <!-- <action android:name="android.intent.action.MAIN" /> -->
 
-            <!--<category android:name="android.intent.category.LAUNCHER" />-->
-            <!--</intent-filter>-->
+
+            <!-- <category android:name="android.intent.category.LAUNCHER" /> -->
+            <!-- </intent-filter> -->
         </activity>
 
         <receiver
@@ -61,12 +68,18 @@
             android:name=".Main2Activity"
             android:label="@string/title_activity_main2"
             android:theme="@style/AppTheme">
-            <!--<intent-filter>-->
-                <!--<action android:name="android.intent.action.MAIN" />-->
 
-                <!--<category android:name="android.intent.category.LAUNCHER" />-->
-            <!--</intent-filter>-->
+            <!-- <intent-filter> -->
+            <!-- <action android:name="android.intent.action.MAIN" /> -->
+
+
+            <!-- <category android:name="android.intent.category.LAUNCHER" /> -->
+            <!-- </intent-filter> -->
         </activity>
+        <activity
+            android:name=".Main3Activity"
+            android:label="@string/title_activity_main3"
+            android:theme="@style/AppTheme"></activity>
     </application>
 
 </manifest>

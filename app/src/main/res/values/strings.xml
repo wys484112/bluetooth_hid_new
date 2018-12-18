@@ -51,6 +51,7 @@
     <string name="auto_pair_fail">配对失败</string>
     <string name="auto_pair_rssi_low">配对信号弱</string>
     <string name="title_activity_main2">Main2Activity</string>
+    <string name="title_activity_main3">Main3Activity</string>
 
 
 </resources>
