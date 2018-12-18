@@ -9,7 +9,7 @@ public class Student extends Model {
     private final static String Tag=Student.class.getSimpleName();
 
     @Column(name="sid",unique = true)
-    private long id;
+    private long sid;
     @Column
     private String name;
     @Column
@@ -19,6 +19,18 @@ public class Student extends Model {
 
     public String getName() {
         return name;
+    }
+
+    public long getSid() {
+        return sid;
+    }
+
+    public void setSid(long sid) {
+        this.sid = sid;
+    }
+
+    public Student() {
+        super();
     }
 
     public void setName(String name) {
@@ -44,7 +56,8 @@ public class Student extends Model {
     @Override
     public String toString() {
         return "Student{" +
-                "id=" + id +
+                "id=" + getId() +
+                ", sid=" + sid +
                 ", name='" + name + '\'' +
                 ", tel_no='" + tel_no + '\'' +
                 ", cls_id=" + cls_id +

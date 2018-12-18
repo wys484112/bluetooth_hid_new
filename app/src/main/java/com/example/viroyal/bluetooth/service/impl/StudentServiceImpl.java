@@ -14,17 +14,18 @@ import java.util.Set;
 
 public class StudentServiceImpl implements StudentService {
     private final static String TAG = StudentServiceImpl.class.getSimpleName();
-    private static StudentService  mSservie;
+    private static StudentService mSservie;
 
     public StudentServiceImpl() {
     }
 
-    public static  synchronized StudentService getInstance(){
+    public static synchronized StudentService getInstance() {
         if (mSservie == null) {
             mSservie = new StudentServiceImpl();
         }
         return mSservie;
     }
+
     @Override
     public int deleteByPrimaryKey(Long id) {
         new Delete().from(Student.class).where("sid=?", id).execute();
@@ -53,7 +54,7 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public int updateByPrimaryKey(Student record) {
-         new Update(Student.class).set("name=?", record.getName(), "tel_no=?", record.getTel_no(), "cls_id=?", record.getCls_id()).where("sid=?", record.getId()).execute();
+        new Update(Student.class).set("name=?," + "tel_no=?," + "cls_id=?", record.getName(), record.getTel_no(), record.getCls_id()).where("sid=?", record.getSid()).execute();
         return 0;
     }
 
