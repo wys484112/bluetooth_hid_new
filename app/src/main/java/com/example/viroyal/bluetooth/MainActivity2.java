@@ -69,12 +69,17 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         context = this;
-        imgRemote.setBackgroundResource(R.drawable.ic_remote_anim);
-        imgConnect.setBackgroundResource(R.drawable.ic_connect_anim);
-        imgRemoteAnimation = (AnimationDrawable) imgRemote.getBackground();
-        imgConnectAnimation = (AnimationDrawable) imgConnect.getBackground();
 
-
+        /*这个可以同时两个动画显示*/
+        imgRemote.setImageResource(R.drawable.ic_remote_anim);
+        imgConnect.setImageResource(R.drawable.ic_connect_anim);
+        imgRemoteAnimation = (AnimationDrawable) imgRemote.getDrawable();
+        imgConnectAnimation = (AnimationDrawable) imgConnect.getDrawable();
+        /*这个动画不能同时显示*/
+//        imgRemote.setBackgroundResource(R.drawable.ic_remote_anim);
+//        imgConnect.setBackgroundResource(R.drawable.ic_connect_anim);
+//        imgRemoteAnimation = (AnimationDrawable) imgRemote.getBackground();
+//        imgConnectAnimation = (AnimationDrawable) imgConnect.getBackground();
         imgRemoteAnimation.start();
         imgConnectAnimation.start();
 
