@@ -117,7 +117,7 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
     /*定义一个倒计时的内部类*/
     private void delayFinishActivity(String status) {
         if (status.contains("已连接")) {
-            mc = new MyCount(10000, 1000);
+            mc = new MyCount(5000, 1000);
             mc.start();
 
         }
