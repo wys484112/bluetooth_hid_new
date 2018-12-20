@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">FastBLE</string>
+    <string name="app_name">蓝牙快连</string>
 
     <string name="notifyTitle">Prompt</string>
     <string name="gpsNotifyMsg">Current mobile phone scanning Bluetooth needs to open the positioning function</string>

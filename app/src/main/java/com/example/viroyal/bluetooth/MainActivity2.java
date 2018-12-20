@@ -151,6 +151,8 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
             BluetoothDevice device = hasDeviceIsConnected();
             if (device != null) {
                 updatePhicomPERIPHERALDeviceStatus("已连接" + device.getName());
+                btName.setText(device.getName());
+                btAddress.setText(device.getAddress());
             } else {
                 Log.e("wwww", "workThreadInit == startDiscovery");
                 updatePhicomPERIPHERALDeviceStatus("正在搜索遥控器");
@@ -242,6 +244,8 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
                         }
                         if (state == BluetoothProfile.STATE_CONNECTED) {//连接成功
                             updatePhicomPERIPHERALDeviceStatus("已连接" + device.getName());
+                            btName.setText(device.getName());
+                            btAddress.setText(device.getAddress());
                         } else if (state == BluetoothProfile.STATE_DISCONNECTED) {//连接失败
                             updatePhicomPERIPHERALDeviceStatus("连接失败");
 
@@ -341,25 +345,7 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
         if (bondedDevices != null) {
             for (BluetoothDevice device : bondedDevices) {
                 if (isPhicomPERIPHERAL(device)) {
-                    if (device.getBondState() == BluetoothDevice.BOND_BONDING) {
-                        try {
-                            cancelBondProcess(BluetoothDevice.class, device);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-
-                    }
-                    if (device.getBondState() != BluetoothDevice.BOND_NONE) {
-                        final BluetoothDevice dev = device;
-
-                        if (dev != null) {
-                            try {
-                                final boolean successful = cancelBondProcess(BluetoothDevice.class, device);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
+                    removeBond(device);
                 }
             }
         }
@@ -370,7 +356,8 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
         BluetoothDevice device=hasDeviceIsConnected();
         if(device!=null){
             updatePhicomPERIPHERALDeviceStatus("已连接" + device.getName());
-
+            btName.setText(device.getName());
+            btAddress.setText(device.getAddress());
         }else{
             updatePhicomPERIPHERALDeviceStatus("未连接遥控器");
         }
@@ -455,7 +442,28 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
         Boolean returnValue = (Boolean) removeBondMethod.invoke(device);
         return returnValue.booleanValue();
     }
-
+    private void removeBond(BluetoothDevice device) {
+        if (device != null) {
+            int state = device.getBondState();
+            if (state == BluetoothDevice.BOND_BONDING) {
+                try {
+                    Method method = BluetoothDevice.class.getMethod("cancelBondProcess");
+                    method.invoke(device);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            state = device.getBondState();
+            if (state != BluetoothDevice.BOND_NONE) {
+                try {
+                    Method method = BluetoothDevice.class.getMethod("removeBond");
+                    method.invoke(device);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
     //是否连接
     static public boolean isConnected(Class btClass, BluetoothDevice device) throws Exception {
         Method isConnectedMethod = btClass.getMethod("isConnected");
