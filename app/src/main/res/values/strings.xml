@@ -53,5 +53,6 @@
     <string name="title_activity_main2">Main2Activity</string>
     <string name="title_activity_main3">Main3Activity</string>
 
-
+    <string name="bluetooth_connect_hint">请同时按下遥控器Home键和音量-键，至红灯闪烁</string>
+    <string name="bluetooth_connect_sub_hint">匹配过程中，请耐心等待1~30秒</string>
 </resources>
