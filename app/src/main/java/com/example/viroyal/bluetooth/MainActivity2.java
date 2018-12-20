@@ -80,8 +80,7 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
 //        imgConnect.setBackgroundResource(R.drawable.ic_connect_anim);
 //        imgRemoteAnimation = (AnimationDrawable) imgRemote.getBackground();
 //        imgConnectAnimation = (AnimationDrawable) imgConnect.getBackground();
-        imgRemoteAnimation.start();
-        imgConnectAnimation.start();
+        imageViewAnimationStart();
 
 
         IntentFilter filter = new IntentFilter();
@@ -100,6 +99,16 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
 
         openBluetooth();
 
+    }
+
+    private void imageViewAnimationStart() {
+        imgRemoteAnimation.start();
+        imgConnectAnimation.start();
+    }
+
+    private void imageViewAnimationStop() {
+        imgRemoteAnimation.stop();
+        imgConnectAnimation.stop();
     }
 
     private void openBluetooth() {
@@ -343,6 +352,13 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
         }
     }
 
+    void cancelDiscovery() {
+        if (adapter != null) {
+            if (adapter.isDiscovering()) {
+                adapter.cancelDiscovery();
+            }
+        }
+    }
 
     private void cleanBoundedPhicomPERIPHERALDevices() {
         Set<BluetoothDevice> bondedDevices = adapter.getBondedDevices();
@@ -358,12 +374,12 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
 
 
     private void readPhicomPERIPHERALDevices() {
-        BluetoothDevice device=hasDeviceIsConnected();
-        if(device!=null){
+        BluetoothDevice device = hasDeviceIsConnected();
+        if (device != null) {
             updatePhicomPERIPHERALDeviceStatus("已连接" + device.getName());
             btName.setText(device.getName());
             btAddress.setText(device.getAddress());
-        }else{
+        } else {
             updatePhicomPERIPHERALDeviceStatus("未连接遥控器");
         }
 //        Set<BluetoothDevice> bondedDevices = adapter.getBondedDevices();
@@ -447,6 +463,7 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
         Boolean returnValue = (Boolean) removeBondMethod.invoke(device);
         return returnValue.booleanValue();
     }
+
     private void removeBond(BluetoothDevice device) {
         if (device != null) {
             int state = device.getBondState();
@@ -469,6 +486,7 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
             }
         }
     }
+
     //是否连接
     static public boolean isConnected(Class btClass, BluetoothDevice device) throws Exception {
         Method isConnectedMethod = btClass.getMethod("isConnected");
@@ -504,11 +522,12 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
     protected void onDestroy() {
         super.onDestroy();
         Log.e("wwww", "ondestroy");
+
+        imageViewAnimationStop();
+
         unregisterReceiver(receiver);
 
-        if (adapter.isDiscovering()) {
-            adapter.cancelDiscovery();
-        }
+        cancelDiscovery();
 
         closeProfileProxy();
 
