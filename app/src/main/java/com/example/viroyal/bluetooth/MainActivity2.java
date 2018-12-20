@@ -105,7 +105,7 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
         }
         if (mBluetoothProfile != null) {
             workThreadInit();
-            readPhicomPERIPHERALDevices();
+//            readPhicomPERIPHERALDevices();
         } else {
             updatePhicomPERIPHERALDeviceStatus("正在开启搜索");
             adapter.getProfileProxy(context, mListener,
@@ -159,6 +159,7 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
             }
         } else {
             adapter.enable();//强制开启蓝牙
+            updatePhicomPERIPHERALDeviceStatus("未连接遥控器");
         }
     }
 
@@ -195,7 +196,7 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
                     Log.e("wwww", "profile == INPUT_DEVICE");
                     mBluetoothProfile = proxy;
                     workThreadInit();
-                    readPhicomPERIPHERALDevices();
+//                    readPhicomPERIPHERALDevices();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -255,7 +256,7 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
                     if (previousState != BluetoothAdapter.STATE_ON && state == BluetoothAdapter.STATE_ON) {
                         if (mBluetoothProfile != null) {
                             workThreadInit();
-                            readPhicomPERIPHERALDevices();
+//                            readPhicomPERIPHERALDevices();
                         } else {
                             updatePhicomPERIPHERALDeviceStatus("正在开启搜索");
                             adapter.getProfileProxy(context, mListener,
@@ -366,25 +367,31 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
 
 
     private void readPhicomPERIPHERALDevices() {
-        Set<BluetoothDevice> bondedDevices = adapter.getBondedDevices();
+        BluetoothDevice device=hasDeviceIsConnected();
+        if(device!=null){
+            updatePhicomPERIPHERALDeviceStatus("已连接" + device.getName());
 
-        if (bondedDevices != null) {
-            for (BluetoothDevice device : bondedDevices) {
-                if (isPhicomPERIPHERAL(device)) {
-                    try {
-                        if (isConnected(BluetoothDevice.class, device)) {
-                            btName.setText(device.getName());
-                            btAddress.setText(device.getAddress());
-                            updatePhicomPERIPHERALDeviceStatus("已连接" + device.getName());
-                            return;
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
+        }else{
+            updatePhicomPERIPHERALDeviceStatus("未连接遥控器");
         }
-        updatePhicomPERIPHERALDeviceStatus("未连接遥控器");
+//        Set<BluetoothDevice> bondedDevices = adapter.getBondedDevices();
+//
+//        if (bondedDevices != null) {
+//            for (BluetoothDevice device : bondedDevices) {
+//                if (isPhicomPERIPHERAL(device)) {
+//                    try {
+//                        if (isConnected(BluetoothDevice.class, device)) {
+//                            btName.setText(device.getName());
+//                            btAddress.setText(device.getAddress());
+//                            updatePhicomPERIPHERALDeviceStatus("已连接" + device.getName());
+//                            return;
+//                        }
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }
+//        }
     }
 
     private void updatePhicomPERIPHERALDeviceStatus(String status) {
