@@ -36,16 +36,17 @@ public class AutoPairBroadcast extends BroadcastReceiver {
 
 //            Intent it = new Intent(" com.qylk.call.main "); context.startActivity(it);
             Log.d("wwww","boot complete");
-            Intent noteList = new Intent(context,MainActivity2.class);
-            noteList.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(noteList);
-//            enablePairService(context, true);
+//            Intent noteList = new Intent(context,MainActivity2.class);
+//            noteList.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//            context.startActivity(noteList);
+
+            enablePairService(context, true);
         }
     }
 
     public void enablePairService(Context context, boolean pair) {
         Log.d(TAG, " =================== >> enablePairService:  " + pair);
-        Intent autoPairService = new Intent(context, AutoPairServiceNew.class);
+        Intent autoPairService = new Intent(context, AutoPairCheckService.class);
         if(pair){
             context.startService(autoPairService);
         } else {
