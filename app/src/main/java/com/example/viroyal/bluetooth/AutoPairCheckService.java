@@ -7,16 +7,21 @@ import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.lang.ref.WeakReference;
+
 public class AutoPairCheckService extends Service {
+    private static final String TAG = AutoPairCheckService.class.getSimpleName();
 
     private Context context;
+    private final IBinder mBinder = new ServiceStub(this);
+
     private BluetoothProfile mBluetoothProfile;
     private BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
     public static final int INPUT_DEVICE = 4;
-    private static final String TAG = AutoPairCheckService.class.getSimpleName();
 
     public AutoPairCheckService() {
     }
@@ -98,6 +103,25 @@ public class AutoPairCheckService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return mBinder;
+    }
+
+
+    /*
+     * By making this a static class with a WeakReference to the Service, we
+     * ensure that the Service can be GCd even when the system process still
+     * has a remote reference to the stub.
+     */
+    static class ServiceStub extends IAutoPairCheckAidlInterface.Stub {
+        WeakReference<AutoPairCheckService> mService;
+
+        ServiceStub(AutoPairCheckService service) {
+            mService = new WeakReference<AutoPairCheckService>(service);
+        }
+
+        @Override
+        public void basicTypes(int anInt, long aLong, boolean aBoolean, float aFloat, double aDouble, String aString) throws RemoteException {
+
+        }
     }
 }
