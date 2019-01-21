@@ -1,6 +1,7 @@
 package com.example.viroyal.bluetooth;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
@@ -13,6 +14,7 @@ import android.content.ServiceConnection;
 import android.util.Log;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -22,6 +24,26 @@ public class ServiceUtils {
     private static final boolean DBG = true;
 
     public static final int INPUT_DEVICE = 4;
+
+
+
+    public static boolean isServiceRunning(Context context, String ServiceName) {
+        if (("").equals(ServiceName) || ServiceName == null)
+            return false;
+        ActivityManager myManager = (ActivityManager) context
+                .getSystemService(Context.ACTIVITY_SERVICE);
+        ArrayList<ActivityManager.RunningServiceInfo> runningService = (ArrayList<ActivityManager.RunningServiceInfo>) myManager
+                .getRunningServices(Integer.MAX_VALUE);
+        for (int i = 0; i < runningService.size(); i++) {
+            Log.e(TAG, "isServiceRunning =="+runningService.get(i).service.getClassName().toString());
+
+            if (runningService.get(i).service.getClassName().toString()
+                    .contains(ServiceName)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     // 是否有连接的遥控器
     public static BluetoothDevice hasDeviceIsConnected(BluetoothProfile mBluetoothProfile) {
@@ -36,7 +58,8 @@ public class ServiceUtils {
         return null;
     }
     public static Boolean isPhicomPERIPHERAL(BluetoothDevice device) {
-        if (device != null && device.getBluetoothClass().getMajorDeviceClass() == BluetoothClass.Device.Major.PERIPHERAL) {
+        if (device != null && device.getBluetoothClass().getMajorDeviceClass() == BluetoothClass.Device.Major.PERIPHERAL)
+        {
             if (device.getName() != null && !device.getName().isEmpty()) {
                 if (device.getName().equals("斐讯遥控器")) {
                     return true;

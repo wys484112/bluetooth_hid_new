@@ -185,7 +185,6 @@ public class MainActivity2 extends Activity implements View.OnClickListener {
             }
             adapter.startDiscovery();
         }
-
     }
 
     // 是否有连接的遥控器
