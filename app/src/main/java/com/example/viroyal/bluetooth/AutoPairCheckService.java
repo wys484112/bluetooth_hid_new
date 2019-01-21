@@ -133,44 +133,12 @@ public class AutoPairCheckService extends Service {
                 BtConnectInfo info=new BtConnectInfo();
                 info=workThreadInit();
 
-//                if (emitter.isDisposed()) {
-//                    return;
-//                }
                 emitter.onNext(info);
                 emitter.onComplete();
             }
         });
     }
-    /**
-     * 连接设备
-     *
-     * @param bluetoothDevice
-     */
-    public void connect(final BluetoothDevice device) {
-        Log.i(TAG, "connect device:" + device);
-        try {
-            //得到BluetoothInputDevice然后反射connect连接设备
-            Method method = mBluetoothProfile.getClass().getMethod("connect",
-                    new Class[]{BluetoothDevice.class});
-            method.invoke(mBluetoothProfile, device);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
-    //开始配对
-    static public boolean createBond(Class btClass, BluetoothDevice device) throws Exception {
-        Method createBondMethod = btClass.getMethod("createBond");
-        Boolean returnValue = (Boolean) createBondMethod.invoke(device);
-        return returnValue.booleanValue();
-    }
-    private Boolean isConnectedToPhicomBluetooth(){
-        BluetoothDevice device = ServiceUtils.hasDeviceIsConnected(mBluetoothProfile);
-        if(device!=null){
-            return true;
-        }
-        return false;
-    }
     private BluetoothProfile.ServiceListener mListener = new BluetoothProfile.ServiceListener() {
         @Override
         public void onServiceConnected(int profile, BluetoothProfile proxy) {
@@ -311,8 +279,6 @@ public class AutoPairCheckService extends Service {
         btConnectInfo.setmAddress(Info.getmAddress());
     }
 
-    private static int reConnectcount=0;
-
     private BroadcastReceiver receiver = new BroadcastReceiver() {
 
         @Override
@@ -348,7 +314,6 @@ public class AutoPairCheckService extends Service {
 
                         }
                         if (state == BluetoothProfile.STATE_CONNECTED) {//连接成功
-                            reConnectcount=0;
                             postBtConnectInfo(new BtConnectInfo(device.getAddress(),device.getName(),"已连接" + device.getName()));
                         } else if (state == BluetoothProfile.STATE_DISCONNECTED) {//连接失败
                             Log.i(TAG, "device.getBondState()=" + device.getBondState());
@@ -400,7 +365,7 @@ public class AutoPairCheckService extends Service {
 
                         if (device.getBondState() == BluetoothDevice.BOND_NONE) {
                             try {
-                                createBond(BluetoothDevice.class, device);
+                                ServiceUtils.createBond(BluetoothDevice.class, device);
                                 postBtConnectInfo(new BtConnectInfo(device.getAddress(),device.getName(),"正在配对"));
 
                             } catch (Exception e) {
@@ -427,6 +392,32 @@ public class AutoPairCheckService extends Service {
             }
         }
     };
+    /**
+     * 连接设备
+     *
+     * @param bluetoothDevice
+     */
+    public void connect(final BluetoothDevice device) {
+        Log.i(TAG, "connect device:" + device);
+        try {
+            //得到BluetoothInputDevice然后反射connect连接设备
+            Method method = mBluetoothProfile.getClass().getMethod("connect",
+                    new Class[]{BluetoothDevice.class});
+            method.invoke(mBluetoothProfile, device);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private Boolean isConnectedToPhicomBluetooth(){
+        BluetoothDevice device = ServiceUtils.hasDeviceIsConnected(mBluetoothProfile);
+        if(device!=null){
+            return true;
+        }
+        return false;
+    }
+
 
 
 

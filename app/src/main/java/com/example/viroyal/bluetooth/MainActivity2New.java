@@ -58,25 +58,20 @@ public class MainActivity2New extends Activity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        /*这个可以同时两个动画显示*/
+        /*动画显示*/
         imgRemote.setImageResource(R.drawable.ic_remote_anim);
         imgConnect.setImageResource(R.drawable.ic_connect_anim);
         imgRemoteAnimation = (AnimationDrawable) imgRemote.getDrawable();
         imgConnectAnimation = (AnimationDrawable) imgConnect.getDrawable();
-        /*这个动画不能同时显示*/
-//        imgRemote.setBackgroundResource(R.drawable.ic_remote_anim);
-//        imgConnect.setBackgroundResource(R.drawable.ic_connect_anim);
-//        imgRemoteAnimation = (AnimationDrawable) imgRemote.getBackground();
-//        imgConnectAnimation = (AnimationDrawable) imgConnect.getBackground();
+
         imageViewAnimationStart();
 
         RxBus.get().register(this);
-//        Intent autoPairService = new Intent(this, AutoPairCheckService.class);
-//        startService(autoPairService);
-        if(ServiceUtils.isServiceRunning(this,AutoPairCheckService.class.getName())){
+
+        if (ServiceUtils.isServiceRunning(this, AutoPairCheckService.class.getName())) {
             if (DBG)
                 Log.d(TAG, "isServiceRunning");
-        }else{
+        } else {
             Intent autoPairService = new Intent(this, AutoPairCheckService.class);
             startService(autoPairService);
             if (DBG)
@@ -94,13 +89,6 @@ public class MainActivity2New extends Activity {
                 btAddress.setText(info.getmAddress());
             }
         }
-
-//
-//        mToken = ServiceUtils.bindToService(this, osc);
-//        if (mToken == null) {
-//            // something went wrong
-//            Toast.makeText(this, "service error!", Toast.LENGTH_LONG).show();
-//        }
     }
 
     private void imageViewAnimationStart() {
@@ -116,18 +104,12 @@ public class MainActivity2New extends Activity {
     @Subscribe
     public void updatePhicomPERIPHERALDeviceStatus(BtConnectInfo btConnectInfo) {
         if (DBG)
-            Log.d(TAG, "updatePhicomPERIPHERALDeviceStatus  btConnectInfo=="+btConnectInfo);
+            Log.d(TAG, "updatePhicomPERIPHERALDeviceStatus  btConnectInfo==" + btConnectInfo);
         delayFinishActivity(btConnectInfo.getmStatus());
         btStatus.setText(btConnectInfo.getmStatus());
         btName.setText(btConnectInfo.getmName());
         btAddress.setText(btConnectInfo.getmAddress());
 
-    }
-
-
-    @Override
-    protected void onResume() {
-        super.onResume();
     }
 
     @Override
@@ -142,7 +124,6 @@ public class MainActivity2New extends Activity {
     }
 
 
-
     /*定义一个倒计时的内部类*/
     private void delayFinishActivity(String status) {
         if (status.contains("已连接")) {
@@ -150,46 +131,24 @@ public class MainActivity2New extends Activity {
             mc.start();
         }
     }
+
     private MyCount mc;
+
     class MyCount extends CountDownTimer {
         public MyCount(long millisInFuture, long countDownInterval) {
             super(millisInFuture, countDownInterval);
         }
+
         @Override
         public void onFinish() {
             MainActivity2New.this.finish();
 
         }
+
         @Override
         public void onTick(long millisUntilFinished) {
 
         }
     }
-
-
-
-    private ServiceUtils.ServiceToken mToken;
-    private IAutoPairCheckAidlInterface mService = null;
-    private ServiceConnection osc = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName classname, IBinder obj) {
-            mService = IAutoPairCheckAidlInterface.Stub.asInterface(obj);
-
-//            if (mService != null) {
-//                try {
-//                    mService.startPostData();
-//                } catch (RemoteException ex) {
-//                }
-//            }
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName classname) {
-            if (DBG)
-                Log.e(TAG,"onServiceDisconnected");
-            mService = null;
-        }
-    };
-
 }
       

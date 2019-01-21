@@ -79,6 +79,12 @@ public class ServiceUtils {
         }
     }
 
+    //开始配对
+    public static boolean createBond(Class btClass, BluetoothDevice device) throws Exception {
+        Method createBondMethod = btClass.getMethod("createBond");
+        Boolean returnValue = (Boolean) createBondMethod.invoke(device);
+        return returnValue.booleanValue();
+    }
 
     public static void removeBond(BluetoothDevice device) {
         if (device != null) {
